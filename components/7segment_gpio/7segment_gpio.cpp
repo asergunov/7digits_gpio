@@ -370,16 +370,31 @@ void LcdDigitsComponent::set_progress(float progress) {
   const uint8_t current_digit = current_step / 6;
   const uint8_t current_segment = 1 + current_step % 6;
 
+
+  auto invert_if_not = [](bool value, bool condition) {
+    return condition ? value : !value;
+  };
+
+  auto digit_level = [&](bool on) {
+    const auto digit_on_level = display_type == CommonAnode;
+    return invert_if_not(digit_on_level, on);
+  };
+
+  auto segment_level = [&](bool on) {
+    const auto segment_on_level = display_type != CommonAnode;
+    return invert_if_not(segment_on_level, on);
+  };
+
   // off all digits
   for (auto *pin : interrupt_data_.digit_pins)
     if (pin)
-      pin->digital_write(true);
+      pin->digital_write(digit_level(false));
   // off all segments
   for (auto *pin : interrupt_data_.segment_pins)
-    pin->digital_write(false);
-  interrupt_data_.segment_pins[current_segment]->digital_write(true);
+    pin->digital_write(segment_level(false));
+  interrupt_data_.segment_pins[current_segment]->digital_write(segment_level(true));
   if (auto pin = interrupt_data_.digit_pins[current_digit])
-    pin->digital_write(false);
+    pin->digital_write(digit_level(true));
 }
 
 void LcdDigitsComponent::strftime(uint8_t pos, const char *format,
