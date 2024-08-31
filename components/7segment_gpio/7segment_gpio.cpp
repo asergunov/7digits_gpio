@@ -376,12 +376,12 @@ void LcdDigitsComponent::set_progress(float progress) {
   };
 
   auto digit_level = [&](bool on) {
-    const auto digit_on_level = display_type == CommonAnode;
+    const auto digit_on_level = interrupt_data_.display_type == CommonAnode;
     return invert_if_not(digit_on_level, on);
   };
 
   auto segment_level = [&](bool on) {
-    const auto segment_on_level = display_type != CommonAnode;
+    const auto segment_on_level = interrupt_data_.display_type != CommonAnode;
     return invert_if_not(segment_on_level, on);
   };
 
