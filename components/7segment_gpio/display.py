@@ -9,7 +9,7 @@ lcd_digits_ns = cg.esphome_ns.namespace("lcd_digits")
 LcdDigitsComponent = lcd_digits_ns.class_(
     "LcdDigitsComponent", cg.PollingComponent
 )
-LcdDigitsComponentRef = LcdDigitsComponent.operator("ref")
+LcdDigitsComponentRef = lcd_digits_ns.operator("ref")
 
 DisplayType = LcdDigitsComponent.enum(
     "DisplayType"
