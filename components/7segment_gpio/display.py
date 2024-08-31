@@ -15,8 +15,8 @@ DisplayType = lcd_digits_ns.enum(
     "DisplayType"
 )
 DISPLAY_TYPE = {
-    "COMMONANODE": DisplayType.CommonAnode,
-    "COMMONCATHODE": DisplayType.CommonCathode,
+    "COMMON_ANODE": DisplayType.CommonAnode,
+    "COMMON_CATHODE": DisplayType.CommonCathode,
 }
 
 # CONF_REVERSE_ENABLE = "reverse_enable"
@@ -39,7 +39,7 @@ CONFIG_SCHEMA = (
                             gpio_output_pin_schema
                         ),
             cv.Optional(CONF_INTENSITY, default=15): cv.int_range(min=0, max=15),
-            cv.Optional(CONF_DISPLAY_TYPE, default="COMMONANODE"): cv.enum(DISPLAY_TYPE, upper=True),
+            cv.Optional(CONF_DISPLAY_TYPE, default="COMMON_ANODE"): cv.enum(DISPLAY_TYPE, upper=True),
             cv.Optional(CONF_ITERATE_DIGITS, default=True): cv.boolean,
             cv.Optional(CONF_COMPENSATE_BRIGHTNESS, default=False): cv.boolean,
             cv.Optional(CONF_INTENSITY, default=15): cv.int_range(min=0, max=15),
