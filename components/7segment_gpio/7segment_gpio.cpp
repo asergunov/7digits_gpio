@@ -206,7 +206,7 @@ void IRAM_ATTR HOT LcdDigitsData::timer_interrupt() {
   };
 
   auto segment_level = [&](bool on) {
-    const auto segment_on_level = display_type == CommonAnode;
+    const auto segment_on_level = display_type != CommonAnode;
     return invert_if_not(segment_on_level, on);
   };
 
