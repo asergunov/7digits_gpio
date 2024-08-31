@@ -196,14 +196,28 @@ void IRAM_ATTR HOT LcdDigitsData::timer_interrupt() {
   const uint32_t min_dt_us = 1000;
   const uint32_t now = micros();
 
+  auto invert_if_not = [](bool value, bool condition) {
+    return condition ? value : !value;
+  };
+
+  auto digit_level = [&](bool on) {
+    const auto digit_on_level = display_type == CommonAnode;
+    return invert_if_not(digit_on_level, on);
+  };
+
+  auto segment_level = [&](bool on) {
+    const auto segment_on_level = display_type == CommonAnode;
+    return invert_if_not(segment_on_level, on);
+  };
+
   uint8_t bit_count = 0;
   if (iterate_digits) {
 
     // turn off digit
-    if(auto digit_pin = digit_pins[current_frame])
-      digit_pin->digital_write(!common_vcc);
+    if (auto digit_pin = digit_pins[current_frame])
+      digit_pin->digital_write(digit_level(false));
 
-    // switch to hext digit
+    // switch to next digit
     current_frame = (current_frame + 1) % digit_pins.size();
 
     auto raw_digit = buffer_[current_frame];
@@ -211,33 +225,33 @@ void IRAM_ATTR HOT LcdDigitsData::timer_interrupt() {
       const bool segment_on = raw_digit & 0x01;
       raw_digit >>= 1;
       bit_count += segment_on ? 1 : 0;
-      segment_pin->digital_write(common_vcc^segment_on);
+      segment_pin->digital_write(segment_level(segment_on));
     }
 
-    if(auto digit_pin = digit_pins[current_frame])
-      digit_pin->digital_write(common_vcc);
+    if (auto digit_pin = digit_pins[current_frame])
+      digit_pin->digital_write(digit_level(true));
   } else {
-    segment_pins[current_frame]->digital_write(common_vcc);
+    segment_pins[current_frame]->digital_write(segment_level(false));
 
-    // switch to hext segment
+    // switch to next segment
     current_frame = (current_frame + 1) % segment_pins.size();
 
     auto const *raw_digit = buffer_;
     for (const auto &digit_pin : digit_pins) {
       const bool digit_on = (*raw_digit) & (0x01 << current_frame);
       bit_count += digit_on ? 1 : 0;
-      if(digit_pin)
-        digit_pin->digital_write(common_vcc^(!digit_on));
+      if (digit_pin)
+        digit_pin->digital_write(digit_level(digit_on));
       raw_digit++;
     }
-    segment_pins[current_frame]->digital_write(!common_vcc);
+    segment_pins[current_frame]->digital_write(segment_level(true));
   }
 
   if (colon_pin)
-    colon_pin->digital_write(common_vcc^(colon_on && current_frame == 0));
+    colon_pin->digital_write(segment_level(colon_on && current_frame == 0));
 
   if (degree_pin)
-    degree_pin->digital_write(common_vcc^(degree_on && current_frame == 0));
+    degree_pin->digital_write(segment_level(degree_on && current_frame == 0));
 
   cycles_to_skip = intensity_delay + (compensate_brightness ? bit_count : 0);
 }
@@ -275,10 +289,10 @@ void LcdDigitsComponent::set_writer(lcd_digits_writer_t &&writer) {
   assert(timer == nullptr);
   writer_ = std::move(writer);
 }
-void LcdDigitsComponent::set_common_vcc(bool arg) {
-  ESP_LOGV(TAG, "set display is common vcc: %d", arg);
+void LcdDigitsComponent::set_display_type(DisplayType arg) {
+  ESP_LOGV(TAG, "set display type: %d", arg);
   InterruptLock lock;
-  interrupt_data_.common_vcc = arg;
+  interrupt_data_.display_type = arg;
 }
 void LcdDigitsComponent::set_compensate_brightness(bool arg) {
   ESP_LOGV(TAG, "Setting up brightness to %d", arg);
@@ -299,7 +313,7 @@ void LcdDigitsComponent::set_intensity(uint8_t arg) {
 void LcdDigitsComponent::dump_config() {
   ESP_LOGCONFIG(TAG, "LCD Digits:");
   for (auto *pin : interrupt_data_.digit_pins) {
-    if(pin) {
+    if (pin) {
       LOG_PIN("  Digit Pin: ", pin);
     }
   }
@@ -351,19 +365,20 @@ void LcdDigitsComponent::set_progress(float progress) {
   set_mode(ProgressMode);
 
   const uint8_t total_digits = interrupt_data_.digit_pins.size();
-  const uint8_t total_steps = 6*total_digits;
-  const uint8_t current_step = total_steps*progress;
-  const uint8_t current_digit = current_step/6;
-  const uint8_t current_segment = 1 + current_step%6;
-  
+  const uint8_t total_steps = 6 * total_digits;
+  const uint8_t current_step = total_steps * progress;
+  const uint8_t current_digit = current_step / 6;
+  const uint8_t current_segment = 1 + current_step % 6;
+
   // off all digits
-  for(auto* pin: interrupt_data_.digit_pins)
-    if(pin) pin->digital_write(true);
+  for (auto *pin : interrupt_data_.digit_pins)
+    if (pin)
+      pin->digital_write(true);
   // off all segments
-  for(auto* pin: interrupt_data_.segment_pins)
+  for (auto *pin : interrupt_data_.segment_pins)
     pin->digital_write(false);
   interrupt_data_.segment_pins[current_segment]->digital_write(true);
-  if(auto pin = interrupt_data_.digit_pins[current_digit])
+  if (auto pin = interrupt_data_.digit_pins[current_digit])
     pin->digital_write(false);
 }
 
@@ -387,7 +402,7 @@ void LcdDigitsComponent::setup() {
   };
 
   for (const auto &pin : interrupt_data_.digit_pins) {
-    if(pin) {
+    if (pin) {
       setup_output_pin(pin, true);
     }
   }

@@ -12,11 +12,11 @@
 
 #pragma once
 
+#include "esphome.h"
 #include "esphome/core/component.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/helpers.h"
 #include "esphome/core/time.h"
-#include "esphome.h"
 
 #include <functional>
 #include <vector>
@@ -38,8 +38,12 @@ struct LcdData {
   bool degree_on = false;
 };
 
+enum DisplayType { CommonAnode, CommonCathode };
+
 struct LcdDigitsData : LcdData {
-  std::vector<GPIOPin *> digit_pins = {nullptr}; // by default it will expect one pin connected to power rail so don't need any actions from library side.
+  std::vector<GPIOPin *> digit_pins = {
+      nullptr}; // by default it will expect one pin connected to power rail so
+                // don't need any actions from library side.
   std::vector<GPIOPin *> segment_pins;
   GPIOPin *colon_pin = nullptr;
   GPIOPin *degree_pin = nullptr;
@@ -49,8 +53,9 @@ struct LcdDigitsData : LcdData {
    * @brief Increase on time proptional to lighting items
    * Usable if you have resistros on digit pins and swithcing the digits
    */
-  bool common_vcc = false;
   bool compensate_brightness = false;
+
+  DisplayType display_type = CommonAnode;
 
   /**
    * @brief Iterate digits or segments
@@ -72,33 +77,31 @@ struct LcdDigitsData : LcdData {
 //   d  .
 class LcdDigitsComponent : public PollingComponent {
 public:
-  enum Mode {
-    BufferMode, ProgressMode, DisabledMode
-  };
+  enum Mode { BufferMode, ProgressMode, DisabledMode };
 
   void set_degree_pin(GPIOPin *arg);
   void set_colon_pin(GPIOPin *arg);
   void set_segment_pins(std::vector<GPIOPin *> segment_pins);
   void set_digit_pins(std::vector<GPIOPin *> digit_pins);
   void set_writer(lcd_digits_writer_t &&writer);
-  void set_common_vcc(bool arg);
+  void set_display_type(DisplayType arg);
   void set_compensate_brightness(bool arg);
   void set_iterate_digits(bool arg);
   void set_intensity(uint8_t arg);
-  
+
   void setup() override;
   void update() override;
   void dump_config() override;
-  
+
   uint8_t print(uint8_t start_pos, const char *str);
   uint8_t print(const char *str);
   uint8_t printf(uint8_t pos, const char *format, ...);
   /**
    * @brief Set the raw value
-   * 
+   *
    * \a raw are 8 bytes low byte becomes the right most one.
    * Each byte is in format `0b.abcdefg`
-   * @param raw 
+   * @param raw
    */
   void set_raw(uint64_t raw);
   void strftime(uint8_t pos, const char *format, ESPTime time);
