@@ -11,7 +11,7 @@ LcdDigitsComponent = lcd_digits_ns.class_(
 )
 LcdDigitsComponentRef = lcd_digits_ns.operator("ref")
 
-DisplayType = LcdDigitsComponent.enum(
+DisplayType = lcd_digits_ns.enum(
     "DisplayType"
 )
 DISPLAY_TYPE = {
